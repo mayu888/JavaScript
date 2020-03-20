@@ -1,3 +1,4 @@
+
 // 节流
 function  throttle(fn,time,start) {
         const self=this;
