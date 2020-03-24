@@ -203,3 +203,53 @@ function proxyFn(fn){
 const result=proxyFn(mult)
 result(1,2,3,4)
 result(1,2,3,4)
+
+/*
+ 命令模式：将一组特定的命令封装到一个函数里嘛，当达到执行某个命令的条件时便执行
+ 比如根据按键事件来执行特定的命令，根据wsad按键执行唱跳rap篮球
+ 并增加replay功能：重复之前做过的命令
+*/
+// 将行为封装到一起
+const action={
+    sing:()=>{
+        console.log('唱')
+    },
+    jump:()=>{
+        console.log('跳')
+    },
+    rap:()=>{
+        console.log('rap');
+    },
+    basketball:()=>{
+        console.log('篮球');
+    }
+}
+const commandStack=[]   //缓存命令
+const makeCommand=(recevier,state)=>{
+    return recevier[state]
+}
+// 按键剑码对应的指令
+const commands={
+    '119':'sing',
+    '115':'jump',
+    '97':'rap',
+    '100':'basketball'
+}
+const dou=document
+dou.addEventListener('keypress',handleKeypress)
+function handleKeypress(e){
+    const keyCode=e.keyCode
+    const command=makeCommand(action,commands[keyCode])  //获取命令
+    if(command){
+        command()
+        commandStack.push(command)
+    }
+}
+const div=document.querySelector('div')
+div.addEventListener('click',handleClick)
+function handleClick(){
+    while(command=commandStack.shift()){
+        command()
+    }
+}
+
