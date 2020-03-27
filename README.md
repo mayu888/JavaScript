@@ -5,6 +5,11 @@
 * 命令模式 
 * 组合模式 
 
+### designPattern-two
+* 享元模式 
+
+
+
 ### handleWriteCode
 * 节流
 * 防抖
