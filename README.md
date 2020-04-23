@@ -7,7 +7,6 @@
 
 ### designPattern-two
 * 享元模式  
-* es
 
 
 
