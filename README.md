@@ -6,7 +6,8 @@
 * 组合模式 
 
 ### designPattern-two
-* 享元模式 
+* 享元模式  
+* es
 
 
 
