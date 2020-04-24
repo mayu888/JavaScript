@@ -35,13 +35,21 @@ function debounce(fn,time){
 }
 
 // bind的实现
-Function.prototype.bind=function() {
+Function.prototype.bind=function(context) {
+    if(typeof(this)!=='function')return;
+    context=context || window;
     const self=this;
-    const context=[].shift.call(arguments) || window;
-    const arg=[].slice.call(arguments)
-    return function(){
-       return self.call(context,...[].concat.call(arg,[].slice.call(arguments)))
+    const args=Array.prototype.slice.call(arguments,1)
+    function f(){}
+    let fn=function(){
+        return self.apply((
+            this instanceof f?this:context),
+            args.concat.call(Array.prototype.slice.call(arguments))
+            )
     }
+    f.prototype=this.prototype;
+    fn.prototype=new f()
+    return fn;
 }
 
 // 函数柯里化
@@ -83,5 +91,14 @@ function currying(){
             return num;
         }
     }
+}
+
+// new实现的原理
+function myNew(target,...arg){
+    const obj={}
+    const self=target;
+    obj.__proto__=target.prototype
+    const isobj=self.call(obj,...arg)
+    return typeof(isobj)==='object'?isobj:obj;
 }
 
