@@ -1,12 +1,5 @@
 ### designPattern-one 
-* 单例模式 
-* 策略模式 
-* 代理模式 
-* 命令模式 
-* 组合模式 
-
-### designPattern-two
-* 享元模式  
+* 设计模式 暂不处理
 
 
 
