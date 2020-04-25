@@ -1,8 +1,6 @@
+### js设计模式-从案例出发
 
-
-
-
-### handleWriteCode
+### handleWriteCode-手写代码实现
 * 节流
 * 防抖
 * bind的实现
