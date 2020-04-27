@@ -80,13 +80,14 @@
       then(onResolve,onReject){
         onResolve=typeof(onResolve)==='function'?onResolve:(value)=>value;
         onReject=typeof(onReject)==='function'?onReject:(error)=>error;
+        const self=this
         let promise2;
         return promise2=new Promise((resolve,reject)=>{
-          const status=this.status;
+          const status=self.status;
           if(status===Promise.FULFILED){
             setTimeout(()=>{
               try{
-                let x=onResolve(this.value);
+                let x=onResolve(self.value);
                 Promise.resolvePromise(promise2,x,resolve,reject,status)
               }catch(e){
                 reject(e)
@@ -96,7 +97,7 @@
           if(status===Promise.REJECTED){
             setTimeout(()=>{
               try{
-                let x=onReject(this.error)
+                let x=onReject(self.error)
                 Promise.resolvePromise(promise2,x,resolve,reject,status)
               }catch(e){
                 reject(e)
