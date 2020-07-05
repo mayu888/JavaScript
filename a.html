@@ -8,9 +8,23 @@
 </head>
 
 <body>
-  <script src="./Promise/Promise.js"></script>
   <script>
 
+    function ex(){
+      console.log(this);
+    }
+    const obj={}
+    console.log(Array.prototype.forEach);
+    
+    [1,2].forEach(()=>{
+      console.log(this);
+      
+    },obj)
+    
+    
+    
+    
+    
   </script>
 </body>
 
