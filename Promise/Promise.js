@@ -21,25 +21,23 @@ class Promise {
     return new Promise((resolve, reject) => reject(error))
   }
   static all(promises) {
-    const Iterator = Symbol.iterator
-    if (!promises[Iterator]) return;
-    return new Promise((resolve, reject) => {
-      const resolveData = [];
-      const rejectData = [];
-      for (let i of promises) {
-        if (!(i instanceof Promise)) {
-          i = Promise.resolve(i)
-        }
-        i
-          .then(data => {
-            resolveData.push(data)
-          }, error => {
-            rejectData.push(error)
+    const iterator=Symbol.iterator
+    if(!promises[iterator])return;
+    return new Promise((resolve,reject)=>{
+        const resolveArr=new Array(promises.length)
+        let n=0;
+        for(let i of promises){
+          Promise.resolve(promises[i]).then(data=>{
+            resolveArr[i]=data
+            n++
+            if(n===promises.length){
+              resolve(resolveArr)
+            }
           })
-      }
-      setTimeout(() => {
-        return rejectData.length === 0 ? resolve(resolveData) : reject(rejectData[0])
-      })
+          .catch(err=>{
+            reject(err)
+          })
+        }
     })
   }
   constructor(outFunction) {

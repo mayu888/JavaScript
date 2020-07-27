@@ -102,3 +102,15 @@ function myNew(target,...arg){
     return typeof(isobj)==='object'?isobj:obj;
 }
 
+function instanceofs(left,right){
+    // instance 对于字面量基本类型判断都为false
+    if(typeof(left)!=='object' || !left)return false;
+    let stop=false
+    let _right=right.prototype
+    let _left=left.__proto__
+    while(true){
+      if(_left==='null')return false;
+      if(_left===_right) return true;
+      _left=_left.__proto__;
+    }
+}
