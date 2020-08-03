@@ -114,3 +114,46 @@ function instanceofs(left,right){
       _left=_left.__proto__;
     }
 }
+
+// 原型继承
+function F(){
+    this.a=1;
+}
+F.prototype.play=function(){
+    console.log('play')
+}
+function S(){
+    this.a=2
+}
+S.prototype=new F()
+
+// 构造函数继承
+function F(){
+    this.a=1;
+}
+F.prototype.play=function(){
+    console.log('play')
+}
+function S(){
+    F.call(this,arguments)
+}
+// 组合寄生式继承
+function F(value){
+    this.a=1
+    this.value=value
+}
+F.prototype.play=function(){
+    console.log('play');
+}
+function S(value){
+    this.a=2
+}
+function extend(f,s){
+    function fn(){}
+    fn.prototype=f.prototype;
+    s.prototype=new fn()
+    s.prototype.constructor=s
+    s.prototype.superclass=s
+    f.prototype.constructor=f
+}
+extend(F,S)

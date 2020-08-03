@@ -55,25 +55,23 @@ class Promise {
     Promise.all返回一个新的Promise，若参数promises中有一个reject，
     那么就返回这个reject的值，只有全部resolve，会返回所有resolve的结果，结果为一个数组。
     */
-    const Iterator = Symbol.iterator
-    if (!promises[Iterator]) return;
-    return new Promise((resolve, reject) => {
-      const resolveData = [];
-      const rejectData = [];
-      for (let i of promises) {
-        if (!(i instanceof Promise)) {
-          i = Promise.resolve(i)
-        }
-        i
-          .then(data => {
-            resolveData.push(data)
-          }, error => {
-            rejectData.push(error)
+    const iterator=Symbol.iterator
+    if(!promises[iterator])return;
+    return new Promise((resolve,reject)=>{
+        const resolveArr=new Array(promises.length)
+        let n=0;
+        for(let i of promises){
+          Promise.resolve(promises[i]).then(data=>{
+            resolveArr[i]=data
+            n++
+            if(n===promises.length){
+              resolve(resolveArr)
+            }
           })
-      }
-      setTimeout(() => {
-        return rejectData.length === 0 ? resolve(resolveData) : reject(rejectData[0])
-      })
+          .catch(err=>{
+            reject(err)
+          })
+        }
     })
   }
   constructor(excutor) {
