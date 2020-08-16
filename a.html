@@ -9,99 +9,16 @@
 
 <body>
   <script>
-function find(list, f) {
-    return list.filter(f)[0]
-}
-
-function deepCopy(obj, cache = []) {
-    // just return if obj is immutable value
-    if (obj === null || typeof obj !== 'object') {
-        return obj
-    }
-
-    // if obj is hit, it is in circular structure
-    const hit = find(cache, c => c.original === obj)
-    if (hit) {
-        return hit.copy
-    }
-
-    const copy = Array.isArray(obj) ? [] : {}
-    // put the copy into cache at first
-    // because we want to refer it in recursive deepCopy
-    cache.push({
-        original: obj,
-        copy
-    })
-    console.log(cache);
-    
-    
-    Object.keys(obj).forEach(key => copy[key] = deepCopy(obj[key], cache))
-
-    return copy
-}
-
-const obj={
-  a:1,
-  b:{
-    fn:()=>{
-      console.log(111);
-    }
+function f(){
+  try{
+    return 'try'
+  }finally{
+    return 
   }
 }
-    
-const a=deepCopy(obj)
-a.b.fn=()=>{}
+console.log(f()) //finally
 
-    // 定义父类
-    function Parent(name) {
-        this.name = name;
-    }
-
-    Parent.prototype.getName = function() {
-        return this.name;
-    };
-
-    // 定义子类
-    function Children() {
-        this.age = 24;
-    }
-
-    // 通过Children的prototype属性和Parent进行关联继承
-
-    Children.prototype = new Parent('陈先生');
-
-    Children.prototype.constructor =Children
-
-    var test = new Children();
-    console.log(test,);
-    
-    // test.constructor === Children.prototype.constructor === Parent
-
-    test.age // 24
-    test.getName(); // 陈先生
-
-    function F(value){
-    this.a=1
-    this.value=value
-}
-F.prototype.play=function(){
-    console.log('play');
-}
-function S(value){
-    this.a=2
-    this.superclass.call(this,value)
-}
-function extend(f,s){
-    function fn(){}
-    fn.prototype=f.prototype;
-    s.prototype=new fn()
-    s.prototype.constructor=s
-    s.prototype.superclass=f
-    f.prototype.constructor=f
-}
-extend(F,S)
-const s=new S(1)
-console.log(s);
+ 
 
 
 

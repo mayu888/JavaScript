@@ -286,36 +286,75 @@ for(let i in obj){
 }
 ```
 
-**GET和SET**
-这两者分别控制对象属性值的设置和获取，对应的行为分别是getter和setter  
-当给一个属性定义getter和setter或者两者都有，js会忽略它们的value和write属性，取而代之的是关心set和get，configurable
-enumerable属性
-```js
-const obj={
-  get a(){
-    return 2
-  }
-}
-Object.defineProperty(obj,'b',{
-  value:3,
-  enumerable:true
-})
-```
-两种写法都在obj上创建了属性，在进行属性访问的时候都会隐式的调用getter来获取值
-```js
-const obj={
-  get a(){
-    return this._a
-  }
-  set a(value){
-    this._a=value+2
-  }
-}
-obj.a=3
-console.log(obj.a) //5
-```
-set中将值储存在_a中并在get中获取，这只是一个惯例，并无特殊行为。
+**类型转换**
+*类型转化*
+ToString  
+String(value)会调用value中toString方法,若此方法返回一个基本类型值，那么对那个值进行转换，若没有此方法或者返回的不是基本类型值，则报错。  
+ToNumber  
+Number(value)会优先调用value中valueOf方法，若有此方法并且返回一个基本类型值，那么对那个值进行转换，若不成立则调用toString方法，若有并且返回一个基本类型值，则对那个值进行转换。若都没有则会报错。  
 
+*宽松相等比较 ==*
+1. 任意类型和布尔值比较：会将任意类型ToNumber比较
+2. 对象和非对象（字符串、数字、布尔值）之间的比较：会优先调用对象中valueOf方法，若有此方法并且返回一个基本类型值，那么对那个值进行转换，若不成立则调用toString方法，若有并且返回一个基本类型值，则对那个值进行转换。若都没有则会报错。
+3. null和undefined的比较：null==undefined，除此之外任何类型都不等于null或undefined
+
+**try catch finally**
+一般来讲都是try先执行然后catch最后finally
+```js
+function f(){
+  try{
+    return 'try'
+  }finally{
+    console.log('finally')
+  }
+  console.log(222)
+}
+console.log(f()) //finally try
+在代码执行顺序上是try先执行，然后return将f()的值设为'try',然后执行finally，打印'finally',最后f函数执行完毕。函数外打印f执行的结果'try'
+```
+throw和return一样也同样是这个道理
+```js
+function f(){
+  try{
+    throw 'try'
+  }finally{
+    console.log('finally')
+  }
+  console.log(222)
+}
+console.log(f())  // finally   Uncaught try
+```
+若是finally中抛出了异常，那么程序就会终止，同时try中return的值也会被异常值覆盖
+```js
+function f(){
+  try{
+    return 'try'
+  }finally{
+    throw 'finally'
+  }
+}
+console.log(f()) //Uncaught finally
+```
+同时，finally中return的值也会覆盖try中return的值
+```js
+function f(){
+  try{
+    return 'try'
+  }finally{
+    return 'finally'
+  }
+}
+console.log(f()) //finally
+若是没有return任何值亦是如此
+function f(){
+  try{
+    return 'try'
+  }finally{
+    return 
+  }
+}
+console.log(f())  // undefined
+```
 
 
 
