@@ -298,7 +298,7 @@ Number(value)会优先调用value中valueOf方法，若有此方法并且返回�
 2. 对象和非对象（字符串、数字、布尔值）之间的比较：会优先调用对象中valueOf方法，若有此方法并且返回一个基本类型值，那么对那个值进行转换，若不成立则调用toString方法，若有并且返回一个基本类型值，则对那个值进行转换。若都没有则会报错。
 3. null和undefined的比较：null==undefined，除此之外任何类型都不等于null或undefined
 
-**try catch finally**
+**try catch finally**  
 一般来讲都是try先执行然后catch最后finally
 ```js
 function f(){
@@ -355,6 +355,17 @@ function f(){
 }
 console.log(f())  // undefined
 ```
+**全局变量**  
+除var和window.xx能够设置全局变量外，使用id选择器也会增加一个全局变量
+```js
+const div=document.createElement('div')
+div.id='all'
+document.body.appendChild(div)
+
+console.log(all) //<div id='all'></div>
+```
+
+
 
 
 
