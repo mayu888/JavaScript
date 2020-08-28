@@ -1,4 +1,5 @@
-**try catch finally**  
+
+### try catch finally
 一般来讲都是try先执行然后catch最后finally
 ```js
 function f(){
