@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+      }
+      .carousel {
+        position: relative;
+        margin: auto;
+        overflow: hidden;
+        margin: 30px auto;
+      }
+      .imgCon {
+        position: absolute;
+        left: 0;
+        right: 0;
+      }
+      .left,
+      .right {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .left {
+        left: 10px;
+      }
+      .right {
+        right: 10px;
+      }
+      /* 圆点父容器 */
+      .processDot {
+        position: absolute;
+        bottom: 20px;
+        width: 200px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: space-around;
+        z-index: 2;
+      }
+      /* 每个小圆点的样式 */
+      .process_dot {
+        list-style: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid red;
+      }
+      /* 当前轮播图片索引和圆点索引一致时 */
+      .process_dot[active="true"] {
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="carousel">
+      <!-- 轮播图的最外层的容器 -->
+      <div class="imgCon"></div>
+      <!-- 轮播图图片的容器-->
+      <ul class="processDot"></ul>
+    </div>
+    <script>
+      /*
+        JS代码在这里
+      */
+      const config = {
+        img: [
+          "img/a.jpeg",
+          "img/b.jpeg",
+          "img/c.jpeg",
+          "img/d.jpeg",
+          "img/e.jpeg",
+        ],
+        leftClick: "img/left.png",
+        rightClick: "img/right.png",
+        autoPlay: true,
+        autoPlayTime: 3000,
+        time: 1500,
+      };
+      class Banner {
+        static addEvent = (type, callback, target = window) => {
+          return target.addEventListener(type, callback);
+        };
+
+        static removeEvent = (type, callback, target = window) => {
+          return target.removeEventListener(type, callback);
+        };
+
+        static setStyle = (element, style = {}) => {
+          Object.assign(element.style, style);
+          return element;
+        };
+
+        static bindProxy = (object, callback, targetChangeCallback) => {
+          if (typeof object !== "object" || object === null) return;
+          const proxy = new Proxy(object, callback(targetChangeCallback));
+          return proxy;
+        };
+
+        constructor(config) {
+          if (typeof config !== "object" || config === null) {
+            throw Error("config  must be a object");
+          }
+          const {
+            img,
+            leftClick,
+            rightClick,
+            time,
+            autoPlay,
+            autoPlayTime,
+          } = config;
+          this.img = img;
+          this.leftClick = leftClick;
+          this.rightClick = rightClick;
+          this.autoPlay = autoPlay;
+          this.time = time;
+          Banner.addEvent("resize", this.getSize.bind(this));
+          this.createCacheImage();
+          this.setBannerSize();
+          this.appendImage();
+          this.appendBtn();
+          this.sizeInfo = {};
+          this.sizeInfo = Banner.bindProxy(
+            this.sizeInfo,
+            this.sizeInfoChange,
+            this.sizeInfoChangeCallback.bind(this)
+          );
+          this.getSize();
+          this.currentImage = {
+            index: 0,
+          };
+          this.currentImage = Banner.bindProxy(
+            this.currentImage,
+            this.currentImageChange,
+            this.currentImageChangeCallback.bind(this)
+          );
+          this.isPlaying = false;
+          this.FPS = 60;
+          this.getFPS();
+          this.computeSpeed();
+          this.animation();
+          this.appendDot();
+          this.autoPlayTime = autoPlayTime / this.rCount;
+          this.cuteTime = this.autoPlayTime;
+          this.autoPlayEvent();
+          this.addMouseEvent();
+        }
+
+        autoPlayEvent() {
+          if (this.autoPlay) {
+            this.autoPlaying = true;
+          }
+        }
+
+        addMouseEvent() {
+          if (this.autoPlay) {
+            Banner.addEvent(
+              "mouseenter",
+              this.handleMouse.bind(this),
+              this.carousel
+            );
+            Banner.addEvent(
+              "mouseleave",
+              this.handleMouse.bind(this),
+              this.carousel
+            );
+          }
+        }
+
+        handleMouse(e) {
+          if (e.type === "mouseenter") {
+            this.autoPlaying = false;
+          }
+          if (e.type === "mouseleave") {
+            this.autoPlaying = true;
+          }
+        }
+
+        getFPS() {
+          let now = Date.now();
+          let lastNow = Date.now();
+          let count = 0;
+          let countTotal = 0;
+          const countArr = [];
+          let computeFrame = null;
+          const compute = () => {
+            now = Date.now();
+            count++;
+            computeFrame = requestAnimationFrame(compute);
+            if (now - lastNow >= 1000) {
+              lastNow = Date.now();
+              const length = countArr.push(count);
+              countTotal = countTotal + count;
+              count = 0;
+              if (length === 3) {
+                this.FPS = Math.round(countTotal / 3);
+                this.computeSpeed();
+                cancelAnimationFrame(computeFrame);
+              }
+            }
+          };
+          compute();
+        }
+
+        getSize() {
+          this.WIDTH = document.body.clientWidth;
+          this.HEIGHT = this.WIDTH / 3;
+          this.sizeInfo.width = this.WIDTH;
+          this.sizeInfo.height = this.HEIGHT;
+        }
+
+        async createCacheImage() {
+          this.bannerCache = this.img.map((src) => {
+            const img = new Image();
+            img.src = src;
+            return img;
+          });
+          this.btnCache = [this.leftClick, this.rightClick].map(
+            (src, index) => {
+              const img = new Image();
+              img.src = src;
+              const className = index === 0 ? "left" : "right";
+              img.setAttribute("class", className);
+              img.type = className;
+              return img;
+            }
+          );
+        }
+
+        setBannerSize() {
+          this.carousel = document.querySelector(".carousel");
+          Banner.setStyle(this.carousel, this.sizeInfo);
+        }
+
+        appendImage(currentImage = 0) {
+          if (typeof currentImage !== "number") {
+            return;
+          }
+          if (!this.imgCon) {
+            this.imgCon = document.querySelector(".imgCon");
+            Banner.setStyle(this.imgCon, this.sizeInfo);
+            this.carousel.appendChild(this.imgCon);
+          }
+          this.imgCon.appendChild(this.bannerCache[currentImage]);
+        }
+
+        appendBtn() {
+          this.btnCache.forEach((btn) => {
+            Banner.addEvent("click", this.handleBtnClick.bind(this), btn);
+            this.carousel.appendChild(btn);
+          });
+        }
+
+        handleDotClick(index, e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (this.isPlaying) return;
+          if (index > this.currentImage.index) {
+            this.direction = "right";
+          }
+          if (index < this.currentImage.index) {
+            this.direction = "left";
+          }
+          this.currentImage.index = index;
+        }
+
+        appendDot() {
+          this.processDot = document.querySelector(".processDot");
+          const fragment = document.createDocumentFragment();
+          this.dotCache = this.bannerCache.map((img, index) => {
+            const dot = document.createElement("li");
+            dot.setAttribute("class", "process_dot");
+            if (index === this.currentImage.index) {
+              dot.setAttribute("active", true);
+            }
+            Banner.addEvent(
+              "click",
+              this.handleDotClick.bind(this, index),
+              dot
+            );
+            fragment.appendChild(dot);
+            return dot;
+          });
+          this.processDot.appendChild(fragment);
+        }
+
+        handleBtnClick(e) {
+          if (this.isPlaying) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const { type } = e.target;
+          let currentImage;
+          this.direction = type;
+          if (type === "left") {
+            currentImage = this.currentImage.index - 1;
+            if (currentImage < 0) {
+              currentImage = this.bannerCache.length - 1;
+            }
+            return (this.currentImage.index = currentImage);
+          }
+          if (type === "right") {
+            currentImage = this.currentImage.index + 1;
+            if (currentImage >= this.bannerCache.length) {
+              currentImage = 0;
+            }
+            return (this.currentImage.index = currentImage);
+          }
+        }
+
+        sizeInfoChange(callback) {
+          if (callback && typeof callback !== "function") {
+            throw Error("callback must be a function!");
+          }
+          return {
+            get: (target, key) => {
+              return target[key];
+            },
+            set: (target, key, value) => {
+              if (!["width", "height"].includes(key)) {
+                throw Error("must be width or height");
+              }
+              if (typeof value !== "number") {
+                throw Error("must be type of number");
+              }
+              const change = Reflect.set(target, key, value + "px");
+              if (key === "height") {
+                callback && callback();
+              }
+              return change;
+            },
+          };
+        }
+
+        sizeInfoChangeCallback() {
+          this.setBannerSize();
+          this.bannerCache.forEach((img) => {
+            Banner.setStyle(img, this.sizeInfo);
+          });
+        }
+
+        currentImageChange(callback) {
+          if (callback && typeof callback !== "function") {
+            throw Error("callback must be a function!");
+          }
+          return {
+            get: (target, key) => {
+              return target[key];
+            },
+            set: (target, key, value) => {
+              if (key !== "index") {
+                throw Error("you can set `index` property at currentImage");
+              }
+              if (typeof value !== "number") {
+                throw Error("must be type of number");
+              }
+              const change = Reflect.set(target, key, value);
+              callback && callback();
+              return change;
+            },
+          };
+        }
+
+        currentImageChangeCallback() {
+          const type = this.direction;
+          this.imgCon.style.width = this.WIDTH * 2 + "px";
+          if (type === "left") {
+            this.imgCon.insertBefore(
+              this.bannerCache[this.currentImage.index],
+              this.imgCon.firstElementChild
+            );
+            this.imgCon.style.left = -this.WIDTH + "px";
+          } else {
+            this.appendImage(this.currentImage.index);
+          }
+          const index = this.currentImage.index;
+          this.dotCache.forEach((dot, dotIndex) => {
+            if (index === dotIndex) {
+              return dot.setAttribute("active", true);
+            }
+            dot.setAttribute("active", false);
+          });
+          this.isPlaying = true;
+        }
+
+        carouselPlaying() {
+          if (!this.isPlaying) return;
+          const direction = this.direction;
+          const imgCon = this.imgCon;
+          const speed = this.speed;
+          if (direction === "left") {
+            imgCon.style.left = imgCon.offsetLeft + speed + "px";
+            if (imgCon.offsetLeft >= 0) {
+              this.isPlaying = false;
+              imgCon.lastElementChild.remove();
+              imgCon.style.left = "0px";
+            }
+          } else if (direction === "right") {
+            imgCon.style.left = imgCon.offsetLeft - speed + "px";
+            if (imgCon.offsetLeft <= -this.WIDTH) {
+              this.isPlaying = false;
+              imgCon.firstElementChild.remove();
+              imgCon.style.left = "0px";
+            }
+          }
+        }
+
+        computeSpeed() {
+          this.rCount = 1000 / this.FPS;
+          this.speed = this.WIDTH / (this.time / this.rCount);
+        }
+
+        handleAutoPlay() {
+          if (!this.autoPlaying) return;
+          this.cuteTime--;
+          if (this.cuteTime > 0) return;
+          this.cuteTime = this.autoPlayTime;
+          var evt = new MouseEvent("click");
+          this.btnCache[1].dispatchEvent(evt);
+        }
+
+        animation() {
+          this.callback = requestAnimationFrame(this.animation.bind(this));
+          this.carouselPlaying();
+          this.handleAutoPlay();
+        }
+      }
+      new Banner(config);
+    </script>
+  </body>
+</html>
