@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script src="http://localhost:3000/script1.js"></script>
+    <script src="http://localhost:3000/script2.js" async></script>
+    <div>111</div>
+    <script defer>
+      function combineReducers(reducers) {
+        const initReducer = {};
+        const reducerKeys = Object.keys(reducers);
+        reducerKeys.forEach((key) => {
+          initReducer[key] = reducers[key];
+        });
+        let hasChange = false;
+        const nextState = {};
+        function combination(state = {}, action) {
+          const keysMap = Object.keys(initReducer);
+          for (let i = 0; i < keysMap.length; i++) {
+            const key = keysMap[i];
+            const prev = state[key];
+            const reducer = initReducer[key];
+            const next = reducer(prevState, action);
+            nextState[key] = next;
+            hasChange = hasChange || prev !== next;
+          }
+          return hasChange ? nextState : state;
+        }
+      }
+
+      const initState = {
+        num: 1,
+      };
+
+      function myReducer(state = initState, action) {
+        const type = action.type;
+        if (type === "ADD") {
+          return {
+            ...state,
+            num: state.num + 1,
+          };
+        }
+        if (type === "CUTE") {
+          return {
+            ...state,
+            num: state.num - 1,
+          };
+        }
+      }
+
+      function createStore(reducerFn) {
+        let initState;
+        let stack = [];
+        const dispatch = (action) => {
+          initState = reducerFn(initState, action);
+          stack.forEach((item) => {
+            item();
+          });
+        };
+        const getState = () => {
+          return initState;
+        };
+
+        const subscribe = (fn) => {
+          stack.push(fn);
+        };
+        return { dispatch, getState, subscribe };
+      }
+
+      setTimeout(() => {
+        console.log("js----1111");
+      }, 1500);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      console.log(new Date(Date.now()), "内部script文件", "上");
+    </script>
+    <script src="http://localhost:3003/a.js" async defer></script>
+    <script src="http://localhost:3003/b.js" async defer></script>
+    <script>
+      console.log(new Date(Date.now()), "内部script文件", "下");
+      window.onload = () => {
+        console.log(111);
+      };
+    </script>
+  </body>
+</html>

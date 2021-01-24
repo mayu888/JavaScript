@@ -15,11 +15,19 @@
         margin: auto;
         overflow: hidden;
         margin: 30px auto;
+        width: 933px;
+        height: 311px;
       }
       .imgCon {
+        width: 933px;
+        height: 100%;
         position: absolute;
         left: 0;
         right: 0;
+      }
+      .imgCon > img {
+        width: 933px;
+        height: 100%;
       }
       .left,
       .right {
@@ -64,8 +72,38 @@
       <div class="imgCon"></div>
       <!-- 轮播图图片的容器-->
       <ul class="processDot"></ul>
+      <!-- 左右点击的button容器 -->
+      <div class="left"></div>
+      <div class="right"></div>
     </div>
+    <script src="./js/utils.js"></script>
+    <script src="./js/containerUtils.js"></script>
+    <script src="./js/createContainer.js"></script>
+    <script src="./js/data.js"></script>
+    <script src="./js/carousel.js"></script>
     <script>
+      const config = {
+        container: document.querySelector(".carousel"),
+        imgContainer: document.querySelector(".imgCon"),
+        processDotContainer: document.querySelector(".processDot"),
+        img: [
+          "img/a.jpeg",
+          "img/b.jpeg",
+          "img/c.jpeg",
+          "img/d.jpeg",
+          "img/e.jpeg",
+        ],
+        btnConfig: {
+          leftBtnContainer: document.querySelector(".left"),
+          rightBtnContainer: document.querySelector(".right"),
+          leftBtn: "img/left.png",
+          rightBtn: "img/right.png",
+        },
+        autoPlay: false,
+      };
+      new Carousel(config);
+    </script>
+    <!-- <script>
       /*
         JS代码在这里
       */
@@ -431,6 +469,6 @@
         }
       }
       new Banner(config);
-    </script>
+    </script> -->
   </body>
 </html>
