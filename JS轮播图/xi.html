@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        position: relative;
+      }
+      .air,
+      .wall,
+      .player,
+      .fire,
+      .money {
+        width: 20px;
+        height: 20px;
+      }
+      .player,
+      .wall,
+      .fire,
+      .money {
+        position: absolute;
+        z-index: 9;
+      }
+      .player {
+        background-color: black;
+      }
+      .line {
+        display: flex;
+      }
+      .air {
+        background-color: rgb(52, 166, 251);
+        display: flex;
+      }
+      .wall {
+        background-color: white;
+      }
+      .mali {
+        background-color: green;
+        position: absolute !important;
+      }
+      .money {
+        background-color: yellow;
+      }
+      .fire {
+        background-color: red;
+      }
+      .box {
+        width: 1600px;
+        height: 900px;
+        position: relative;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box"></div>
+    <script>
+      const str = `
+      ................................................................................
+      ................................................................................
+      ................................................................................
+      ................................................................................
+      ................................................................................
+      ................................................................................
+      ..................................................................###...........
+      ...................................................##......##....##+##..........
+      ....................................o.o......##..................#+++#..........
+      .................................................................##+##..........
+      ...................................#####..........................#v#...........
+      ............................................................................##..
+      ..##......................................o.o................................#..
+      ..#.....................o....................................................#..
+      ..#......................................#####.............................o.#..
+      ..#..........####.......o....................................................#..
+      ..#..@.......#..#................................................#####.......#..
+      ..############..###############...####################.....#######...#########..
+      ..............................#...#..................#.....#....................
+      ..............................#+++#..................#+++++#....................
+      ..............................#+++#..................#+++++#....................
+      ..............................#####..................#######....................
+      ................................................................................
+      ................................................................................
+      `;
+
+      const createDom = (type, attr = {}, style = {}) => {
+        const ele = document.createElement(type);
+        Object.keys(attr).forEach((key) => {
+          ele.setAttribute(key, attr[key]);
+        });
+        Object.assign(ele.style, style);
+        return ele;
+      };
+
+      const player = createDom("div", { class: "player" });
+      const playCache = {};
+      const wallData = [];
+
+      class F {
+        constructor(left, top) {
+          this.target = null;
+          this.left = left;
+          this.top = top;
+        }
+
+        init = () => {
+          if (this.target) {
+            Object.assign(this.target.style, {
+              left: this.left + "px",
+              top: this.top + "px",
+            });
+          }
+        };
+
+        getData = () => {
+          return {
+            left: this.target.offsetLeft,
+            top: this.target.offsetTop,
+            bottom: this.target.offsetTop + 20,
+            right: this.target.offsetLeft + 20,
+          };
+        };
+
+        setStyle = (style) => {
+          Object.assign(this.target.style, style);
+        };
+      }
+
+      class KeyEvent {
+        constructor(target) {
+          this.target = target;
+          setMoveDir.call(this);
+          this.init();
+        }
+        init = () => {
+          window.addEventListener("keydown", this.handleEvent);
+          window.addEventListener("keyup", this.handleEvent);
+        };
+
+        handleEvent = (e) => {
+          console.log(this.target);
+
+          e.preventDefault();
+          if (!this.eventArray.includes(e.code)) return;
+          this[e.type] && this[e.type](e.code);
+        };
+
+        keydown = (code) => {
+          if (this[code]) return;
+          this[code] = true;
+          this.target[code] = true;
+        };
+
+        keyup = (code) => {
+          this[code] = false;
+          // this.target[code] = false;
+          if (code !== "ArrowUp") {
+            this.target[code] = false;
+          }
+          // this.target.moveInfo[code] = false;
+          // this.target.moving = false;
+        };
+      }
+
+      class Player extends F {
+        constructor(left, top) {
+          super(left, top);
+          this.type = "player";
+          this.target = createDom("div", { class: "player" });
+          this.LR = null;
+          this.upSpeed = 3;
+          this.init();
+          this.ArrowRight = false;
+          this.ArrowLeft = false;
+          this.ArrowUp = false;
+          this.ArrowDown = false;
+          this.update = true;
+        }
+
+        computed = () => {
+          const { top, right, left, bottom } = this.getData();
+          // this.update = true;
+          for (let i = 0; i < wallData.length; i++) {
+            const everyWall = wallData[i].getData();
+            if (
+              right > everyWall.left &&
+              top < everyWall.bottom &&
+              left < everyWall.right &&
+              bottom > everyWall.top
+            ) {
+              if (5 > right - everyWall.left > 1) {
+                this.setStyle({ right: everyWall.left + "px" });
+                // this.update = false;
+                return;
+              }
+              if (5 > everyWall.right - left > 1) {
+                this.setStyle({ left: everyWall.right + "px" });
+                // this.update = false;
+                return;
+              }
+
+              // if (5 > bottom - everyWall.top && bottom - everyWall.top > 1) {
+              //   console.log();
+
+              //   this.setStyle({ bottom: everyWall.top + "px" });
+              //   update = false;
+              //   // return;
+              // }
+              if (bottom - everyWall.top > 0) {
+                this.setStyle({ top: everyWall.top - 20 + "px" });
+                return;
+              }
+              // console.log(wallData[i]);
+              // console.log(right, top, left, bottom);
+              // console.log(
+              //   everyWall.left,
+              //   everyWall.bottom,
+              //   everyWall.right,
+              //   everyWall.top
+              // );
+
+              // return;
+            }
+          }
+          // return update;
+        };
+
+        animate = function () {
+          // this.update = true;
+
+          // Promise.resolve().then(this.moveLeft);
+          this.computed();
+          this.moveLeft();
+          this.moveRight();
+          this.moveUp();
+          // this.moveDown();
+          // Promise.resolve().then(this.moveUp);
+          // Promise.resolve().then(this.moveDown);
+          requestAnimationFrame(this.animate.bind(this));
+        };
+
+        moveLeft = () => {
+          if (!this.update) return;
+          if (this.ArrowRight) {
+            this.moveUp();
+            this.move(3, 0);
+          }
+        };
+
+        moveRight = () => {
+          if (!this.update) return;
+          if (this.ArrowLeft) {
+            this.moveUp();
+            this.move(-3, 0);
+          }
+        };
+
+        moveUp = () => {
+          if (!this.update) return;
+          if (this.upSpeed < -3) {
+            this.upSpeed = 3;
+            this.ArrowUp = false;
+            return;
+          }
+          if (this.ArrowUp) {
+            this.move(0, -this.upSpeed);
+            this.upSpeed = this.upSpeed - 0.1;
+          }
+        };
+
+        // moveDown = async () => {
+        //   if (!this.update) return;
+        //   if (this.ArrowDown) {
+        //     this.move(0, this.upSpeed);
+        //     this.upSpeed = this.upSpeed + 0.09;
+        //     if (this.upSpeed > 3) {
+        //       this.upSpeed = 3;
+        //     }
+        //   }
+        // };
+
+        save = (source) => {
+          return (source.player = this);
+        };
+
+        move = (leftNum, topNum) => {
+          const { left, top } = this.getData();
+          if (this.target) {
+            this.setStyle({
+              left: left + leftNum + "px",
+              top: top + topNum + "px",
+            });
+          }
+        };
+      }
+
+      class Wall extends F {
+        constructor(left, top) {
+          super(left, top);
+          this.type = "wall";
+          this.target = createDom("div", { class: "wall" });
+          this.init();
+        }
+        save = (data) => {
+          data && data.push(this);
+        };
+      }
+
+      class Money extends F {
+        constructor(left, top) {
+          super(left, top);
+          this.target = createDom("div", { class: "money" });
+          this.init();
+        }
+      }
+
+      class Fire extends F {
+        constructor(left, top) {
+          super(left, top);
+          this.target = createDom("div", { class: "fire" });
+          this.init();
+        }
+      }
+
+      const map = new Map();
+
+      const typeMap = {
+        "#": Wall,
+        "@": Player,
+        o: Money,
+        "+": Fire,
+      };
+      let rows = str
+        .trim()
+        .split("\n")
+        .map((l) => [...l])
+        .filter(Boolean);
+      const newRow = rows.map((row) => {
+        return row.filter((item) => item !== " ");
+      });
+
+      const box = document.querySelector(".box");
+      const init = (playCache, wallData) => {
+        const total = document.createDocumentFragment();
+        Promise.resolve().then(() => {
+          newRow.forEach((row, index) => {
+            const line = createDom("div", { class: "line" });
+            const rowFrag = document.createDocumentFragment();
+            row.forEach((ele) => {
+              const air = createDom("div", { class: "air" });
+              rowFrag.appendChild(air);
+            });
+            line.appendChild(rowFrag);
+            total.appendChild(line);
+          });
+          box.appendChild(total);
+        });
+        Promise.resolve()
+          .then(() => {
+            newRow.forEach((row, y) => {
+              row.forEach((ele, x) => {
+                const Atom = typeMap[ele];
+                if (!Atom) return;
+                const target = new Atom(x * 20, y * 20);
+                const Dom = target.target;
+                every = Dom;
+                every && total.appendChild(every);
+                if (target.type === "player") {
+                  target.save(playCache);
+                }
+                if (target.type === "wall") {
+                  target.save(wallData);
+                }
+              });
+            });
+            box.appendChild(total);
+          })
+          .finally(() => {
+            new KeyEvent(playCache.player);
+            console.log();
+
+            playCache.player.animate();
+          });
+      };
+
+      init(playCache, wallData);
+
+      function setMoveDir() {
+        this.eventArray = ["ArrowRight", "ArrowDown", "ArrowUp", "ArrowLeft"];
+        this.eventArray.forEach((key) => {
+          this[key] = false;
+        });
+      }
+    </script>
+  </body>
+</html>
