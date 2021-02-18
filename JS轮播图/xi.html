@@ -14,12 +14,15 @@
       }
       .air,
       .wall,
-      .player,
       .fire,
       .money {
         width: 20px;
         height: 20px;
       }
+      /* .player{
+        width: 20px;
+        height: 40px;
+      } */
       .player,
       .wall,
       .fire,
@@ -34,7 +37,6 @@
         display: flex;
       }
       .air {
-        background-color: rgb(52, 166, 251);
         display: flex;
       }
       .wall {
@@ -46,20 +48,23 @@
       }
       .money {
         background-color: yellow;
+        border-radius: 50%;
       }
       .fire {
         background-color: red;
       }
       .box {
+        background-color: rgb(52, 166, 251);
         width: 1600px;
-        height: 900px;
+        /* height: 900px; */
         position: relative;
-        overflow: hidden;
+        overflow-x: scroll;
       }
     </style>
   </head>
   <body>
     <div class="box"></div>
+    <script src="./gamemap.js"></script>
     <script>
       const str = `
       ................................................................................
@@ -68,7 +73,7 @@
       ................................................................................
       ................................................................................
       ................................................................................
-      ..................................................................###...........
+      ...........................................................o......###...........
       ...................................................##......##....##+##..........
       ....................................o.o......##..................#+++#..........
       .................................................................##+##..........
@@ -88,18 +93,29 @@
       ................................................................................
       `;
 
-      const createDom = (type, attr = {}, style = {}) => {
-        const ele = document.createElement(type);
-        Object.keys(attr).forEach((key) => {
-          ele.setAttribute(key, attr[key]);
-        });
-        Object.assign(ele.style, style);
-        return ele;
-      };
+      const unit = 20;
+      class Utils {
+        static getCacheData = () => {
+          return new Map([
+            ["Wall", []],
+            ["Player", {}],
+            ["Money", []],
+            ["Fire", []],
+            ["MoveFire", []],
+          ]);
+        };
 
-      const player = createDom("div", { class: "player" });
-      const playCache = {};
-      const wallData = [];
+        static createDom = (type, attr = {}, style = {}) => {
+          const ele = document.createElement(type);
+          Object.keys(attr).forEach((key) => {
+            ele.setAttribute(key, attr[key]);
+          });
+          Object.assign(ele.style, style);
+          return ele;
+        };
+      }
+
+      let CACHE = Utils.getCacheData();
 
       class F {
         constructor(left, top) {
@@ -117,13 +133,21 @@
           }
         };
 
+        removeThis = () => {
+          return this.content.removeChild(this.target);
+        };
+
         getData = () => {
           return {
             left: this.target.offsetLeft,
             top: this.target.offsetTop,
-            bottom: this.target.offsetTop + 20,
-            right: this.target.offsetLeft + 20,
+            bottom: this.target.offsetTop + this.size.h,
+            right: this.target.offsetLeft + this.size.w,
           };
+        };
+
+        getSize = () => {
+          return { width: this.size.w + "px", height: this.size.h + "px" };
         };
 
         setStyle = (style) => {
@@ -132,120 +156,79 @@
       }
 
       class KeyEvent {
-        constructor(target) {
-          this.target = target;
-          setMoveDir.call(this);
+        constructor(eventTarget) {
+          this.eventTarget = eventTarget;
+          this.eventType = ["ArrowRight", "ArrowDown", "ArrowUp", "ArrowLeft"];
+          this.ArrowRight = false;
+          this.ArrowDown = false;
+          this.ArrowUp = false;
+          this.ArrowLeft = false;
           this.init();
         }
-        init = () => {
-          window.addEventListener("keydown", this.handleEvent);
-          window.addEventListener("keyup", this.handleEvent);
-        };
+        init() {
+          window.addEventListener("keydown", this.handleEvent.bind(this));
+          window.addEventListener("keyup", this.handleEvent.bind(this));
+        }
 
-        handleEvent = (e) => {
-          console.log(this.target);
-
-          e.preventDefault();
-          if (!this.eventArray.includes(e.code)) return;
+        handleEvent(e) {
+          // e.preventDefault();
+          if (!this.eventType.includes(e.code)) return;
           this[e.type] && this[e.type](e.code);
-        };
+        }
 
         keydown = (code) => {
           if (this[code]) return;
           this[code] = true;
-          this.target[code] = true;
+          this.eventTarget[code] = true;
         };
 
         keyup = (code) => {
           this[code] = false;
-          // this.target[code] = false;
           if (code !== "ArrowUp") {
-            this.target[code] = false;
+            this.eventTarget[code] = false;
           }
-          // this.target.moveInfo[code] = false;
-          // this.target.moving = false;
         };
       }
 
       class Player extends F {
         constructor(left, top) {
           super(left, top);
-          this.type = "player";
-          this.target = createDom("div", { class: "player" });
-          this.LR = null;
-          this.upSpeed = 3;
+          this.type = "Player";
+          this.size = { w: 15, h: 20 };
+          this.target = Utils.createDom(
+            "div",
+            { class: "player" },
+            this.getSize()
+          );
+          this.wallData = CACHE.get("Wall");
+          this.moneyData = CACHE.get("Money");
+          this.fireData = CACHE.get("Fire");
+          this.moveFireData = CACHE.get("MoveFire");
+          this.upSpeed = 4;
+          this.top = top - (this.size.h - unit);
           this.init();
           this.ArrowRight = false;
           this.ArrowLeft = false;
           this.ArrowUp = false;
-          this.ArrowDown = false;
+          this.ArrowDown = true;
           this.update = true;
+          this.removeMoney = 0;
+          this.animateBind = null;
         }
 
-        computed = () => {
-          const { top, right, left, bottom } = this.getData();
-          // this.update = true;
-          for (let i = 0; i < wallData.length; i++) {
-            const everyWall = wallData[i].getData();
-            if (
-              right > everyWall.left &&
-              top < everyWall.bottom &&
-              left < everyWall.right &&
-              bottom > everyWall.top
-            ) {
-              if (5 > right - everyWall.left > 1) {
-                this.setStyle({ right: everyWall.left + "px" });
-                // this.update = false;
-                return;
-              }
-              if (5 > everyWall.right - left > 1) {
-                this.setStyle({ left: everyWall.right + "px" });
-                // this.update = false;
-                return;
-              }
-
-              // if (5 > bottom - everyWall.top && bottom - everyWall.top > 1) {
-              //   console.log();
-
-              //   this.setStyle({ bottom: everyWall.top + "px" });
-              //   update = false;
-              //   // return;
-              // }
-              if (bottom - everyWall.top > 0) {
-                this.setStyle({ top: everyWall.top - 20 + "px" });
-                return;
-              }
-              // console.log(wallData[i]);
-              // console.log(right, top, left, bottom);
-              // console.log(
-              //   everyWall.left,
-              //   everyWall.bottom,
-              //   everyWall.right,
-              //   everyWall.top
-              // );
-
-              // return;
-            }
-          }
-          // return update;
-        };
-
         animate = function () {
-          // this.update = true;
-
-          // Promise.resolve().then(this.moveLeft);
-          this.computed();
-          this.moveLeft();
-          this.moveRight();
-          this.moveUp();
-          // this.moveDown();
-          // Promise.resolve().then(this.moveUp);
-          // Promise.resolve().then(this.moveDown);
-          requestAnimationFrame(this.animate.bind(this));
+          if (this.removeMoney === 8) {
+            return confirm("闯关成功！");
+          }
+          this.update = true;
+          Promise.resolve().then(this.moveLeft);
+          Promise.resolve().then(this.moveRight);
+          Promise.resolve().then(this.moveUp);
+          Promise.resolve().then(this.moveDown);
+          this.animateBind = requestAnimationFrame(this.animate.bind(this));
         };
 
         moveLeft = () => {
-          if (!this.update) return;
           if (this.ArrowRight) {
             this.moveUp();
             this.move(3, 0);
@@ -253,7 +236,6 @@
         };
 
         moveRight = () => {
-          if (!this.update) return;
           if (this.ArrowLeft) {
             this.moveUp();
             this.move(-3, 0);
@@ -261,39 +243,80 @@
         };
 
         moveUp = () => {
-          if (!this.update) return;
-          if (this.upSpeed < -3) {
-            this.upSpeed = 3;
+          if (this.upSpeed < -4) {
+            this.upSpeed = 4;
             this.ArrowUp = false;
+            this.ArrowDown = true;
             return;
           }
           if (this.ArrowUp) {
+            this.ArrowDown = false;
             this.move(0, -this.upSpeed);
             this.upSpeed = this.upSpeed - 0.1;
           }
         };
 
-        // moveDown = async () => {
-        //   if (!this.update) return;
-        //   if (this.ArrowDown) {
-        //     this.move(0, this.upSpeed);
-        //     this.upSpeed = this.upSpeed + 0.09;
-        //     if (this.upSpeed > 3) {
-        //       this.upSpeed = 3;
-        //     }
-        //   }
-        // };
+        moveDown = () => {
+          if (this.ArrowDown) {
+            this.move(0, this.upSpeed);
+            this.upSpeed = this.upSpeed + 0.05;
+            if (this.upSpeed > 4) {
+              this.upSpeed = 4;
+            }
+          }
+        };
 
         save = (source) => {
-          return (source.player = this);
+          return source.set(this.type, this);
         };
 
         move = (leftNum, topNum) => {
           const { left, top } = this.getData();
+          const moveLeft = left + leftNum;
+          const moveTop = top + topNum;
+          const moveRight = left + this.size.w + leftNum;
+          const moveBottom = top + topNum + this.size.h;
+          const touchWall = this.wallData.find((item) =>
+            item.touch({
+              left: moveLeft,
+              right: moveRight,
+              top: moveTop,
+              bottom: moveBottom,
+            })
+          );
+          const touchMoney = this.moneyData.find((item) =>
+            item.touch({
+              left: moveLeft,
+              right: moveRight,
+              top: moveTop,
+              bottom: moveBottom,
+            })
+          );
+          const touchFire = [...this.fireData, ...this.moveFireData].find(
+            (item) =>
+              item.touch({
+                left: moveLeft,
+                right: moveRight,
+                top: moveTop,
+                bottom: moveBottom,
+              })
+          );
+          if (touchFire) {
+            cancelAnimationFrame(this.animateBind);
+            CACHE = Utils.getCacheData();
+            return runGame(CACHE, KeyEvent);
+          }
+          if (touchMoney) {
+            if (touchMoney.removeThis()) {
+              this.removeMoney = this.removeMoney + 1;
+            }
+          }
+          if (touchWall) return;
+
           if (this.target) {
             this.setStyle({
-              left: left + leftNum + "px",
-              top: top + topNum + "px",
+              left: moveLeft + "px",
+              top: moveTop + "px",
             });
           }
         };
@@ -302,100 +325,267 @@
       class Wall extends F {
         constructor(left, top) {
           super(left, top);
-          this.type = "wall";
-          this.target = createDom("div", { class: "wall" });
+          this.type = "Wall";
+          this.size = { w: 20, h: 20 };
+          this.target = Utils.createDom(
+            "div",
+            { class: "wall" },
+            this.getSize()
+          );
           this.init();
         }
-        save = (data) => {
-          data && data.push(this);
+        save = (source) => {
+          source.get(this.type).push(this);
+        };
+
+        touch = (target) => {
+          const { left, bottom, right, top } = this.getData();
+          if (
+            target.left < right &&
+            target.right > left &&
+            target.top < bottom &&
+            target.bottom > top
+          ) {
+            return true;
+          }
+          return false;
         };
       }
 
       class Money extends F {
         constructor(left, top) {
           super(left, top);
-          this.target = createDom("div", { class: "money" });
+          this.type = "Money";
+          this.size = { w: 15, h: 15 };
+          this.random = Math.random() > 0.5;
+          this.upSpeed = 1;
+          this.target = Utils.createDom(
+            "div",
+            { class: "money" },
+            this.getSize()
+          );
           this.init();
         }
+
+        save = (source) => {
+          source.get(this.type).push(this);
+        };
+
+        animate = function () {
+          this.upSpeed = this.upSpeed - 0.05;
+          if (this.upSpeed <= -1) {
+            this.upSpeed = 1;
+          }
+          this.move();
+          requestAnimationFrame(this.animate.bind(this));
+        };
+
+        move = () => {
+          const { top } = this.getData();
+          this.setStyle({ top: top - this.upSpeed + "px" });
+        };
+
+        touch = (target) => {
+          const { left, bottom, right, top } = this.getData();
+          if (
+            target.left < right &&
+            target.right > left &&
+            target.top < bottom &&
+            target.bottom > top
+          ) {
+            return true;
+          }
+          return false;
+        };
       }
 
       class Fire extends F {
         constructor(left, top) {
           super(left, top);
-          this.target = createDom("div", { class: "fire" });
+          this.type = "Fire";
+          this.size = { w: 20, h: 20 };
+          this.target = Utils.createDom(
+            "div",
+            { class: "fire" },
+            this.getSize()
+          );
           this.init();
         }
+
+        save = (source) => {
+          source.get(this.type).push(this);
+        };
+
+        touch = (target) => {
+          const { left, bottom, right, top } = this.getData();
+          if (
+            target.left < right &&
+            target.right > left &&
+            target.top < bottom &&
+            target.bottom > top
+          ) {
+            return true;
+          }
+          return false;
+        };
       }
 
-      const map = new Map();
+      class MoveFire extends Fire {
+        constructor(left, top) {
+          super(left, top);
+          this.type = "MoveFire";
+          this.target = Utils.createDom(
+            "div",
+            { class: "fire" },
+            this.getSize()
+          );
+          this.init();
+          this.wallData = CACHE.get("Wall");
+          this.fireData = CACHE.get("Fire");
+          this.upSpeed = 3;
+        }
+
+        animate = function () {
+          this.upSpeed = this.upSpeed - 0.05;
+          this.move(this.upSpeed);
+          requestAnimationFrame(this.animate.bind(this));
+        };
+
+        move = (moveTop) => {
+          const { top, left } = this.getData();
+          const t1 = this.wallData.find((item) =>
+            item.touch({
+              top,
+              bottom: top + this.size.h,
+              left,
+              right: left + this.size.w,
+            })
+          );
+          const t2 = this.fireData.find((item) =>
+            item.touch({
+              top: top + moveTop,
+              bottom: top + this.size.h,
+              left,
+              right: left + this.size.w,
+            })
+          );
+          if (t1) {
+            return (this.upSpeed = 0);
+          }
+          if (t2) {
+            return (this.upSpeed = 3);
+          }
+
+          this.setStyle({ top: top + moveTop + "px" });
+        };
+
+        touch = (target) => {
+          const { left, bottom, right, top } = this.getData();
+          if (
+            target.left < right &&
+            target.right > left &&
+            target.top < bottom &&
+            target.bottom > top
+          ) {
+            return true;
+          }
+          return false;
+        };
+
+        save = (source) => {
+          source.get(this.type).push(this);
+        };
+      }
 
       const typeMap = {
         "#": Wall,
         "@": Player,
         o: Money,
         "+": Fire,
+        v: MoveFire,
       };
-      let rows = str
-        .trim()
-        .split("\n")
-        .map((l) => [...l])
-        .filter(Boolean);
-      const newRow = rows.map((row) => {
-        return row.filter((item) => item !== " ");
-      });
 
-      const box = document.querySelector(".box");
-      const init = (playCache, wallData) => {
+      const initData = (levelTemplate) => {
+        return levelTemplate
+          .trim()
+          .split("\n")
+          .map((l) => [...l])
+          .filter(Boolean)
+          .map((row) => {
+            return row.filter((item) => item !== " ");
+          });
+      };
+
+      const getContent = () => {
+        return document.querySelector(".box");
+      };
+
+      var runGame = (cache, Event) => {
+        const content = getContent();
+        content.innerHTML = "";
+        const level = initData(GAME_LEVELS[1]);
         const total = document.createDocumentFragment();
-        Promise.resolve().then(() => {
-          newRow.forEach((row, index) => {
-            const line = createDom("div", { class: "line" });
-            const rowFrag = document.createDocumentFragment();
-            row.forEach((ele) => {
-              const air = createDom("div", { class: "air" });
-              rowFrag.appendChild(air);
+        new Promise((reslove) => {
+          level.forEach((l, y) => {
+            const line = Utils.createDom("div", { class: "line" });
+            const lineFrag = document.createDocumentFragment();
+            l.forEach((ele, x) => {
+              const air = Utils.createDom("div", { class: "air" });
+              lineFrag.appendChild(air);
+              const Atom = typeMap[ele];
+              if (Atom) {
+                const target = new Atom(x * unit, y * unit);
+                target.content = content;
+                target.save(cache);
+                const dom = target.target;
+                total.appendChild(dom);
+              }
             });
-            line.appendChild(rowFrag);
+            line.appendChild(lineFrag);
             total.appendChild(line);
           });
-          box.appendChild(total);
-        });
-        Promise.resolve()
-          .then(() => {
-            newRow.forEach((row, y) => {
-              row.forEach((ele, x) => {
-                const Atom = typeMap[ele];
-                if (!Atom) return;
-                const target = new Atom(x * 20, y * 20);
-                const Dom = target.target;
-                every = Dom;
-                every && total.appendChild(every);
-                if (target.type === "player") {
-                  target.save(playCache);
-                }
-                if (target.type === "wall") {
-                  target.save(wallData);
-                }
-              });
-            });
-            box.appendChild(total);
+          reslove(total);
+        })
+          .then((total) => {
+            content.appendChild(total);
           })
           .finally(() => {
-            new KeyEvent(playCache.player);
-            console.log();
-
-            playCache.player.animate();
+            Event && new Event(cache.get("Player"));
+            for (let item of cache.values()) {
+              if (Array.isArray(item)) {
+                item.forEach((i) => i.animate && i.animate());
+              } else {
+                item.animate && item.animate();
+              }
+            }
           });
       };
+      runGame(CACHE, KeyEvent);
 
-      init(playCache, wallData);
 
-      function setMoveDir() {
-        this.eventArray = ["ArrowRight", "ArrowDown", "ArrowUp", "ArrowLeft"];
-        this.eventArray.forEach((key) => {
-          this[key] = false;
-        });
+      const p1 = new Promise(resolve=>{
+         setTimeout(()=>{
+          resolve(1)
+         },8000)
+       })
+       const p2 = new Promise(resolve=>{
+         setTimeout(()=>{
+          resolve(2)
+         },2000)
+       })
+       const p3 = new Promise(resolve=>{
+         setTimeout(()=>{
+          resolve(3)
+         },3000)
+       })
+
+
+      async function asdf(){
+        for await(let i of [p1,p2,p3] ){
+          console.log(i);
+        }
       }
+      asdf()
     </script>
   </body>
 </html>
