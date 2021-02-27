@@ -561,31 +561,6 @@
           });
       };
       runGame(CACHE, KeyEvent);
-
-
-      const p1 = new Promise(resolve=>{
-         setTimeout(()=>{
-          resolve(1)
-         },8000)
-       })
-       const p2 = new Promise(resolve=>{
-         setTimeout(()=>{
-          resolve(2)
-         },2000)
-       })
-       const p3 = new Promise(resolve=>{
-         setTimeout(()=>{
-          resolve(3)
-         },3000)
-       })
-
-
-      async function asdf(){
-        for await(let i of [p1,p2,p3] ){
-          console.log(i);
-        }
-      }
-      asdf()
     </script>
   </body>
 </html>
